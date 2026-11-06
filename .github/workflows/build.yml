@@ -34,6 +34,18 @@ jobs:
         run: cmake --build build --config Release --parallel 4
       - name: Test simulation and controls
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: Check SDL resource lifetime
+        if: runner.os == 'Linux'
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          cmake -S . -B build/memory -DONEBILLION_SANITIZERS=ON -DONEBILLION_FETCH_SDL=OFF -DSDL3_DIR="${{ github.workspace }}/build/_deps/sdl3-build" -DCMAKE_BUILD_TYPE=Debug
+          cmake --build build/memory --target one_billion --parallel 4
+          ctest --test-dir build/memory --output-on-failure -R ui_smoke
+          ./build/memory/one_billion --software --stress 4096 --smoke-frames 90
       - name: Package
         run: cmake --install build --config Release --prefix dist
       - name: Documentation and third party notices

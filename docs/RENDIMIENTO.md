@@ -76,7 +76,9 @@ Las demás pruebas comprueban:
 - Una victoria de primera oleada y una campaña completa con un comandante programado, tres etapas tecnológicas y cuatro jefes derrotados.
 - Entrada por teclado/ratón y renderizado con SDL en `ui_smoke`.
 
-AddressSanitizer y UndefinedBehaviorSanitizer se habilitan con `ONEBILLION_SANITIZERS=ON`. El workflow ejecuta también LeakSanitizer en Linux. En el entorno local de creación, LeakSanitizer no pudo leer `/proc/<pid>/task` y abortó su inspección de fugas; esto es una limitación del entorno, no un informe de ausencia o presencia de fugas. Las comprobaciones ASan/UBSan se pueden ejecutar aquí con `detect_leaks=0`; la comprobación de fugas queda separada en CI.
+AddressSanitizer y UndefinedBehaviorSanitizer se habilitan con `ONEBILLION_SANITIZERS=ON`. La [primera ejecución de CI](https://github.com/DonMAriando/1billion/actions/runs/42242345228) pasó las compilaciones y pruebas de Windows/Linux y la campaña completa con ASan, UBSan y LeakSanitizer en el núcleo.
+
+El workflow también construye la aplicación con sanitizadores sobre el SDL ya compilado y comprueba el ciclo de vida de controles/renderizado y una sesión con audio, video y multitud usando los drivers `dummy`. En el entorno local de creación, LeakSanitizer no pudo leer `/proc/<pid>/task` y abortó su inspección de fugas; las pruebas locales completas de aplicación y núcleo pasaron con ASan/UBSan usando `detect_leaks=0`. Por eso la inspección de fugas se ejecuta en CI, donde esa restricción no está presente. No encontrar errores en estas pruebas no es una garantía universal de ausencia de errores en otros recorridos o drivers.
 
 ## Escala futura
 
