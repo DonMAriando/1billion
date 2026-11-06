@@ -1,0 +1,63 @@
+name: Build and verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    name: ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: Windows-x64
+          - os: ubuntu-latest
+            label: Linux-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux development libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build pkg-config libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev libxss-dev libxtst-dev libasound2-dev libgl1-mesa-dev
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+      - name: Test simulation and controls
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Package
+        run: cmake --install build --config Release --prefix dist
+      - name: Documentation and third party notices
+        shell: bash
+        run: |
+          cp README.md THIRD_PARTY.md dist/
+          cp -r docs third_party dist/
+      - name: Upload playable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: one-billion-${{ matrix.label }}
+          path: dist/
+          retention-days: 30
+  sanitizers:
+    name: Memory and undefined behavior
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure without SDL
+        run: cmake -S . -B build -DONEBILLION_BUILD_GAME=OFF -DONEBILLION_SANITIZERS=ON -DCMAKE_BUILD_TYPE=Debug
+      - name: Build
+        run: cmake --build build --parallel 4
+      - name: Check memory and complete campaign
+        env:
+          ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: ctest --test-dir build --output-on-failure

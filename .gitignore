@@ -1,0 +1,13 @@
+/build/
+/out/
+/dist/
+/.vs/
+/.idea/
+/.cache/
+CMakeUserPresets.json
+*.user
+*.suo
+*.bmp
+*.profraw
+*.profdata
+compile_commands.json
